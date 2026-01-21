@@ -101,14 +101,14 @@ def print_info(intervals, total_reads_processed, total_reads_mapped, total_uniqu
     print(f"Alignment quality: {total_alignment_errors/total_unique_matchings if total_unique_matchings > 0 else 0} errors per read")
 
 # Find reads in dna
-def process_reads(S, kmer_index, k):
+def process_reads(S, kmer_index, k, filename):
     intervals = []
     total_reads_processed = 0
     total_reads_mapped = 0
     total_unique_matchings = 0
     total_alignment_errors = 0
     dna_size = len(S)
-    for i, r in enumerate(read_fastq("./ERR022075_1.fastq")):
+    for i, r in enumerate(read_fastq(filename)):
         total_reads_processed += 1
 
         # print info
@@ -184,7 +184,7 @@ def main():
     S = read_fna("./GCF_000005845.2_ASM584v2_genomic.fna")
     k = 15
     kmer_index = build_kmer_index(S, k)
-    process_reads(S, kmer_index, k)
+    process_reads(S, kmer_index, k, "./ERR022075_1.fastq")
 
 
 if __name__ == "__main__":
