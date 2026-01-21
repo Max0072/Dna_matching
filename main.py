@@ -1,26 +1,21 @@
 from collections import defaultdict
 
 
-def sim_dist(a, b, k):
+# Levenshtein distance
+def lev_dist(a, b, k):
     INF = k + 1
     # --- trim common prefix ---
-    n, m = len(a), len(b)
-    p = 0
+    n, m, pref_c = len(a), len(b), 0
     lim = min(n, m)
-    while p < lim and a[p] == b[p]:
-        p += 1
-    if p:
-        a = a[p:]
-        b = b[p:]
-    # --- trim common suffix (after prefix trim!) ---
-    n, m = len(a), len(b)
-    s = 0
+    while pref_c < lim and a[pref_c] == b[pref_c]:
+        pref_c += 1
+    if pref_c: a, b = a[pref_c:], b[pref_c:]
+    # --- trim common suffix ---
+    n, m, suf_c = len(a), len(b), 0
     lim = min(n, m)
-    while s < lim and a[n - 1 - s] == b[m - 1 - s]:
-        s += 1
-    if s:
-        a = a[:n - s]
-        b = b[:m - s]
+    while suf_c < lim and a[n - 1 - suf_c] == b[m - 1 - suf_c]:
+        suf_c += 1
+    if suf_c: a, b = a[:n - suf_c], b[:m - suf_c]
     # -----------------
     if b == "":
         return len(a) if len(a) <= k else k + 1
@@ -66,8 +61,7 @@ def sim_dist(a, b, k):
         prev_lo, prev_hi = cur_lo, cur_hi
     return prev[m - prev_lo + 1]
 
-
-# read dna
+# Read dna from the file
 def read_fna(filename, max_size=0):
     dna = ""
     with open(filename) as f:
@@ -81,8 +75,7 @@ def read_fna(filename, max_size=0):
     print(f"File loaded, dna size is {len(dna)}\n")
     return dna
 
-
-# get only reads
+# Get reads
 def read_fastq(filename):
     with open(filename) as f:
         while f.readline():
@@ -91,7 +84,7 @@ def read_fastq(filename):
             f.readline()
             yield seq
 
-
+# Build index for kmers
 def build_kmer_index(dna, k):
     index = defaultdict(list)
     n = len(dna)
@@ -99,7 +92,7 @@ def build_kmer_index(dna, k):
         index[dna[i:i + k]] += [i]
     return index
 
-
+# Print statistics
 def print_info(intervals, total_reads_processed, total_reads_mapped, total_unique_matchings, total_alignment_errors, dna_size):
     print(f"Total number of reads processed: {total_reads_processed} ({total_reads_processed / 22720100 * 100:.1f}%)")
     print(f"Mapping rates: {total_reads_mapped / total_reads_processed * 100 if total_reads_processed > 0 else 0:.1f}%")
@@ -107,9 +100,7 @@ def print_info(intervals, total_reads_processed, total_reads_mapped, total_uniqu
     print(f"Percentage of multi-mapped reads: {(total_reads_mapped - total_unique_matchings) / total_reads_mapped * 100 if total_reads_mapped > 0 else 0:.1f}%")
     print(f"Alignment quality: {total_alignment_errors/total_unique_matchings if total_unique_matchings > 0 else 0} errors per read")
 
-
-
-
+# Find reads in dna
 def process_reads(S, kmer_index, k):
     intervals = []
     total_reads_processed = 0
@@ -148,14 +139,13 @@ def process_reads(S, kmer_index, k):
         m_count = 0
         for c in candidates:
             max_dist = 5
-            if c + r_size <= len(S) and ((distance:=sim_dist(S[c-off:c+r_size-off], r, max_dist)) <= max_dist):
+            if c + r_size <= len(S) and ((distance:=lev_dist(S[c-off:c+r_size-off], r, max_dist)) <= max_dist):
                 m_count += 1
                 place = c
                 if m_count == 1:
                     saved_dist = distance
                 if m_count > 1:
                     break
-
         if m_count == 1:
             intervals.append((place - off, place + r_size - off))
 
@@ -164,21 +154,19 @@ def process_reads(S, kmer_index, k):
             total_unique_matchings += 1
             total_alignment_errors += saved_dist
         if m_count >= 1: total_reads_mapped += 1
-
     print_info(intervals, total_reads_processed, total_reads_mapped, total_unique_matchings, total_alignment_errors, dna_size)
     coverage, intervals = count_total_matchings_and_update(intervals)
     print(f"Genome read coverage: {coverage / dna_size * 100:.4f}% ({coverage} units)")
     print("-" * 30)
     return intervals, total_reads_processed, total_reads_mapped, total_unique_matchings
 
-
+# count total amount of matchings in dna
 def count_total_matchings_and_update(intervals):
     if not intervals:
         return 0
     new_intervals = []
     intervals.sort()
     count = 0
-
     cur_l, cur_r = intervals[0]
     for l, r in intervals[1:]:
         if l > cur_r:
@@ -194,10 +182,8 @@ def count_total_matchings_and_update(intervals):
 
 def main():
     S = read_fna("./GCF_000005845.2_ASM584v2_genomic.fna")
-
     k = 15
     kmer_index = build_kmer_index(S, k)
-
     process_reads(S, kmer_index, k)
 
 
