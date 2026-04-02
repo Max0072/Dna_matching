@@ -38,29 +38,3 @@ Tested on *E. coli* K-12 (4.6 Mbp genome, `GCF_000005845.2`) with Illumina reads
 | Multi-mapped | 3.0% |
 | Avg. errors per read | 0.197 |
 | Genome coverage | 98.48% |
-
-## Usage
-
-**Requirements:** Python 3.8+, no external packages.
-
-**Input files** (place in the same directory):
-- Reference genome in FASTA format: `GCF_000005845.2_ASM584v2_genomic.fna`
-- Reads in FASTQ format: `ERR022075_1.fastq`
-
-Both files can be downloaded from NCBI:
-- Genome: [GCF_000005845.2](https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_000005845.2/)
-- Reads: [ERR022075](https://www.ebi.ac.uk/ena/browser/view/ERR022075) (ENA)
-
-**Run:**
-```bash
-python match_reads_and_dna.py
-```
-
-Progress is printed every 100k reads.
-
-## Parameters
-
-| Parameter | Value | Location |
-|---|---|---|
-| k-mer seed size | 15 | `main()` |
-| Max edit distance | 5 | `process_reads()` |
